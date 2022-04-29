@@ -4,6 +4,9 @@
   "repository": "git@github.com:nszknao/blog.git",
   "author": "Naoto Nishizaka <nszk.nao@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "preview:zenn": "zenn preview"
+  },
   "dependencies": {
     "zenn-cli": "0.1.109"
   }
