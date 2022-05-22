@@ -5,7 +5,8 @@
   "author": "Naoto Nishizaka <nszk.nao@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "preview:zenn": "zenn preview"
+    "dev": "zenn preview",
+    "new": "zenn new:article"
   },
   "dependencies": {
     "zenn-cli": "0.1.110"
