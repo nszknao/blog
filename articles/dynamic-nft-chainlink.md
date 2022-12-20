@@ -7,7 +7,7 @@ published: true
 ---
 
 :::message
-本記事はEthereum Advent Calendar 2022の19日目の記事です。
+本記事は[Ethereum Advent Calendar 2022](https://qiita.com/advent-calendar/2022/ethereum)の19日目の記事です。
 :::
 
 # はじめに
