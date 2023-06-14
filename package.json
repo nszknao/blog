@@ -9,6 +9,6 @@
     "new": "zenn new:article"
   },
   "dependencies": {
-    "zenn-cli": "0.1.134"
+    "zenn-cli": "0.1.144"
   }
 }
