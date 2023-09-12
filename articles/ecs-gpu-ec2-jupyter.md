@@ -3,7 +3,7 @@ title: "ECS on GPUでJupyter環境を構築したらSageMakerの方が楽だっ�
 emoji: "🎗️"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AWS", "ECS", "Docker", "機械学習"]
-published: false
+published: true
 ---
 
 ECSで先に構築したのですが、同じことをSageMakerで実現したら一瞬だったので記事にして供養します 🙏
@@ -14,7 +14,8 @@ ECSで先に構築したのですが、同じことをSageMakerで実現した�
 - インフラは基本Terraformで構築しており、モジュール利用は最小限にして個別でresourceを定義
 
 # tl;dr
-- 起動タイプをFargateからEC2にしただけでハマりどころが頻発したので、直面したトラブルシュートを残しておきます
+- 起動タイプをFargateからEC2にしただけでハマりどころが頻発しました
+- 直面したトラブルシュートをまとめてあります
 - 自前のJupyter環境が欲しい時はSageMakerを使おう（真顔）
 
 # Jupyter実行までの流れ
@@ -67,7 +68,7 @@ CMD ["python3", "-m", "jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--port=
 
 # Terraformでリソースを作成
 AWSのインフラ構成は以下の通りです。
-TODO: 画像を貼る
+![AWSアーキテクチャ](/images/1a314f08-d91f-41fa-bb8f-7cb151cbcb33.png)
 
 それぞれのリソースについて、Terraformファイルとハマりどころを記載していきます。デプロイするために必要な周辺リソースはトグル内に入れておきました。
 
@@ -124,14 +125,6 @@ resource "aws_security_group" "jupyter_ec2" {
     to_port         = 80
     protocol        = "tcp"
     security_groups = [aws_security_group.jupyter_alb.id]
-  }
-
-  ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -191,6 +184,7 @@ https://aws.amazon.com/jp/releasenotes/aws-deep-learning-ami-gpu-cuda-11-5-amazo
 ```bash
 aws ec2 describe-images --region us-east-1 --owners amazon --filters 'Name=name,Values=Deep Learning AMI GPU CUDA 11.5.? (Amazon Linux 2) ????????' 'Name=state,Values=available' --query 'reverse(sort_by(Images, &CreationDate))[:1].ImageId' --output text
 ```
+AMIによってサポートされているインスタンスタイプが異なるので、選定したAMIのページを確認してください。
 
 ### ECS用の設定ファイルを配置 + ECSコンテナエージェントのインストール
 ECSタスクが実行されるEC2インスタンスは自動でアタッチされるのではなく、設定ファイルをEC2インスタンスに配置した上でECSコンテナエージェントを起動する必要があります。
@@ -248,6 +242,15 @@ ingress {
 ```
 
 ここを忘れるとECSクラスターがインスタンスを認識してくれないので注意してください。
+
+### インターネットにアクセスできる場所に置く
+EC2は外向きにインターネットアクセスできる場所に配置しないと、ECSクラスターがインスタンスを認識してくれませんでした。
+
+上記ではパブリックサブネットに配置することで対応していますが、プライベートサブネットに置いてNATゲートウェイを経由することでも対応できます。
+
+https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/bestpracticesguide/networking-outbound.html
+
+パブリックサブネット内にあるのでセキュリティグループの設定は注意する必要があります。上記では念のためSSHアクセス用のポートも閉じています。
 
 ## ECS
 Jupyterの常駐タスクを1つだけ起動するだけなので、AutoScalingは使わずシンプルにクラスター・サービス・タスク定義を作成します。
