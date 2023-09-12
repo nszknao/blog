@@ -3,7 +3,7 @@ title: "ECS on GPUでJupyter環境を構築したらSageMakerの方が楽だっ�
 emoji: "🎗️"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AWS", "ECS", "Docker", "機械学習"]
-published: true
+published: false
 ---
 
 ECSで先に構築したのですが、同じことをSageMakerで実現したら一瞬だったので記事にして供養します 🙏
