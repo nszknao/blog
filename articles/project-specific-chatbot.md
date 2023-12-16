@@ -3,7 +3,7 @@ title: "プロジェクトのナレッジに特化したChatbotを作った話"
 emoji: "🦙"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["LLM", "LangChain", "LlamaIndex"]
-published: false
+published: true
 ---
 
 :::message
@@ -11,9 +11,9 @@ published: false
 :::
 
 # tl:dr
-- 社内のプロジェクトに特化したChatbotを作った話
-- 技術的にはLlamaIndexとLangChainを組み合わせたRetrieval-Augmented Generation（RAG）がメイン
-- 検証用のデータも作成して改善ループを回そう
+- LLMの外部知識をRetrieval-Augmented Generation（RAG）で与えてみる
+- 技術的にはLlamaIndexのシンプルなインデックスとLangChainを組み合わせ
+- 検証用のデータも作成して改善ループが回る仕組みを作ろう
 
 # モチベーション
 ## 問い合わせに対応する時間的コストを減らしたい
@@ -321,9 +321,9 @@ for i, node in enumerate(nodes):
   - ステータスは作成前、作成済み、不要など
   - 運用の中でドキュメントを更新したらステータスを作成前にする
   - 定期バッチ処理でステータスを見に行って処理したら作成済みステータスにする
-  - [Database automations](https://www.notion.so/help/database-automations)がSlack以外の外部サービスに通知を送れるようになればバッチの仕組みも必要なくなる🤔
+  - [Database automations](https://www.notion.so/help/database-automations)がSlack以外の外部サービスに通知を送れるようになればバッチの仕組みも必要なくなりそう🤔
 
-上記の方法で変更されたページのIDを取得できたら、Notion APIを使って本文を取得してインデックスを再作成→外部ストレージに保存すれば対応できます。
+上記の方法によって変更されたページのIDを取得できたら、Notion APIを使って本文を取得してインデックスを再作成→外部ストレージに保存すれば対応できます。
 
 # まとめ
 世の中のAI活用が進むことでドキュメンテーションの重要性は今後より一層増えるでしょう。
