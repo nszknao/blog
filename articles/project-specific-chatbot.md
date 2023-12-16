@@ -6,9 +6,13 @@ topics: ["LLM", "LangChain", "LlamaIndex"]
 published: false
 ---
 
+:::message
+本記事は[LLM Advent Calendar 2023 シリーズ2](https://qiita.com/advent-calendar/2023/llm)の17日目の記事です。
+:::
+
 # tl:dr
 - 社内のプロジェクトに特化したChatbotを作った話
-- 技術的にはRetrieval-Augmented Generation（RAG）あたり
+- 技術的にはLlamaIndexとLangChainを組み合わせたRetrieval-Augmented Generation（RAG）がメイン
 - xxすることで回答精度が向上したよ
 
 # モチベーション
@@ -16,8 +20,6 @@ published: false
 Chatbot導入前に発生していた問題を洗い出すことで、どのような状態になりたいのかあるべき姿を明確にします。
 
 弊社では社内メンバーやクライアントとのコミュニケーション手段として主にSlackを使っているのですが、プロジェクトの数が増えるにつれて問い合わせ対応にかける時間が増えてきました。
-
-**TODO: 問い合わせ内容の3分類スライド**
 
 問い合わせの内容は大きく3つに分類できます。
 - プロダクトの仕様に対する質問
@@ -35,7 +37,14 @@ Chatbot導入前に発生していた問題を洗い出すことで、どのよ�
 
 
 # 作ったもの
-LlamaIndexの[ドキュメント](https://docs.llamaindex.ai/en/latest/getting_started/concepts.html)にRAGアプリケーションのステップについて記載があったので、その順番に沿って設計しました。
+RAGの全体像のイメージはこちらです。
+
+![RAGの全体像](https://docs.llamaindex.ai/en/latest/_images/basic_rag.png)
+*RAGの全体像[^1]*
+
+ユーザーのクエリを元にコーパス（Your data）から関連データ（relevant data）を抽出し、元のクエリと一緒にLLMにプロンプトを渡して結果を取得します。
+
+LlamaIndexの[ドキュメント](https://docs.llamaindex.ai/en/latest/getting_started/concepts.html)にあるRAGアプリケーションの開発ステップに沿って設計しました。
 
 ![RAGの開発ステップ](https://docs.llamaindex.ai/en/latest/_images/stages.png)
 *RAGの開発ステップ[^1]*
@@ -43,32 +52,23 @@ LlamaIndexの[ドキュメント](https://docs.llamaindex.ai/en/latest/getting_s
 ## Loading
 まず、外部のデータソースからRAGのパイプラインにデータを取り込みます。
 
-プロジェクトで管理しているドキュメントのデータを使用しても良いのですが、最後のEvaluatingステップでパイプラインの評価を行いたいので、検証データもセットで提供されているパブリックデータを使いました。
+プロジェクトで管理しているドキュメントのデータを使用するのがシンプルで早いと思います。弊社はNotionをメインで使っているのですが、現場のツールに合わてデータローダをLlamaHubやLangChainで探してみてください。
+https://llamahub.ai/
+
+生のデータを持ってくるだけであればコピペで終わるのですが、今回はEvaluatingステップでRAGパイプラインの評価も行いたいと考えました。そこで評価用のデータセットも作成したのですが、詳細は[おまけ](#検証用のデータセット作成)に置いておきます。
+
+生データがなくてとりあえず開発したパイプラインの評価がしたい場合は、検証データもセットで提供されているパブリックデータを使うこともできます。以下はBeIRという情報検索分野のベンチマークに使われているデータセットの1つです。
 https://huggingface.co/datasets/BeIR/fiqa
 
 :::details FiQAデータセットについて by ChatGPT
 「FiQA - Financial Opinion Mining and Question Answering」データセットは、金融関連のテキストデータを中心に構築されたデータセットで、意見マイニング（Opinion Mining）と質問応答（Question Answering）のタスクに特化しています。このデータセットは、金融分野における自然言語処理（NLP）の応用を促進することを目的としています。
 :::
 
-パブリックになっている日本語データセットは少ないです。英語のデータセットを利用する際に注意しなければならないのが、言語やドメインによる性能の悪化です。そのため開発したパイプラインをプロジェクトに導入する前に試験運用は必要になりますが、まずは素早いイテレーションを回す仕組みを作る、と言う意味では活用する意味はあると思います。
+このデータセットには元のコーパスも含まれているので、ユーザーからクエリされた質問を含むコンテキストをDBなどのソースデータから抽出するロジックもテストできました。
 
-またこのデータセットには元のコーパスも含まれているので、ユーザーからクエリされた質問を含むコンテキストをDBなどのソースデータから抽出するロジックもテストできました。以下の図でいう「relevant data」が抽出されたコンテキストです。
+ちなみに、パブリックになっている日本語データセットは少ないです。英語のデータセットを利用する際に注意しなければならないのが、言語やドメインによる性能の悪化です。そのため開発したパイプラインをプロジェクトに導入する前に試験運用は必要になりますが、まずは素早いイテレーションを回す仕組みを作る、と言う意味では活用する意味はあると思います。
 
-![RAGの全体像](https://docs.llamaindex.ai/en/latest/_images/basic_rag.png)
-*RAGの全体像[^1]*
-
-RAGの検証方法について調べる中で見つけたベンチマークに含まれるカラムはおおよそ以下のような構造でした。
-- question
-- answer
-- contexts
-
-質問に答えるときに利用したコンテキストをカラムに含めることで、検証の際に元のコーパス（たいていは膨大）を参照せずに済むと言うメリットは大きいと思います。ただ素人目にみたらこの「contexts」を抽出するのも難しいのでは？という疑問がありました。
-
-RAGの全体像の図を見ても分かる通り、LLMにはプロンプトとしてqueryの他にrelevant dataしか与えられないため、ここの情報が適切に抽出できていることはレスポンスの精度に大きく影響します。そう言った意味でもFiQAのデータセットでは、コーパスの情報からcontextsを抽出するロジックも検証できるのは助かります。
-
-（私自身NLPの専門家でははないので、テキトーなことを言っていたらご指摘ください🙏）
-
-### 実行コード
+### コード
 HuggingFaceのデータセットをLlamaIndexのDocumentとして読み込みます。
 ```Python
 from datasets import load_dataset
@@ -86,11 +86,13 @@ for data in fiqa_corpus["corpus"]:
 ```
 
 ## Indexing
-Lodingステップで読み込んだデータソースを横断的に検索できるようなデータ構造を作成します。
+Loadingステップで読み込んだデータソースを横断的に検索できるようなデータ構造を作成します。
 
-**TODO: データの構造に応じたインデックスの設計について**
+今回はシンプルなVectorStoreIndexしか利用していませんが、コーパスのデータ構造に応じてインデックスを設計することで精度の向上が期待できます。[^4]
 
-### 実行コード
+当たり前ですが元のソースであるプロジェクトのドキュメントが更新されればこのインデックスも再作成する必要があります。そのため本番運用の際にはインデックス更新フローのシステム設計も考慮しなければなりません。このあたりの運用についても調査したことを[おまけ](#ドキュメントの更新に対応)に記載したので、ドキュメントをNotionで管理している方は参考にしていただければ幸いです！
+
+### コード
 ```Python
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
@@ -136,7 +138,7 @@ OpenAIのapikeyはモデルのインスタンスを作成するときに明示�
 ## Storing
 一度作成したIndexを外部のストレージなどに永続化することで、次回以降に埋め込み表現やインデックスを作成するコストを抑えることができます。
 
-### 実行コード
+### コード
 ```Python
 # ローカルディスクに永続化
 index.storage_context.persist(persist_dir="./path/to/folder")
@@ -152,17 +154,18 @@ index = load_index_from_storage(storage_context, service_context)
 ## Querying
 インデックスに対してクエリを投げて検索結果を取得します。
 
-### 実行コード
+### コード
 ```Python
 query_engine = vector_index.as_query_engine()
-query_engine.query("How to deposit a cheque issued to an associate in my business into my business account?")
+ourput = query_engine.query("How to deposit a cheque issued to an associate in my business into my business account?")
+output.response # response string
 ```
 
 ## Evaluating
-開発したパイプラインの精度を評価する大事なステップです。RAGパイプラインの評価では、大きく分けてRetrievalとGenerationの軸に分けることが多いです[^2]。
+開発したパイプラインの精度を評価する大事なステップです。RAGパイプラインの評価では、大きくRetrievalとGenerationの軸に分けることが多いです[^2]。
 
 ### Retrieval
-クエリの内容に関連するコンテキストをコーパスから適切に抜き出しているかを評価します。
+クエリの内容に関連するコンテキストをコーパスから適切に抜き出しているかを評価します。RAG全体像の図でいうYour dataから抽出したrelevant dataの精度です。
 
 - 再現率(Recall): 全ての適合アイテムのうち、検索結果にどれだけ適合アイテムが含まれるか
 - 適合率(Precision): 検索結果に含まれる適合アイテムの比率
@@ -170,7 +173,7 @@ query_engine.query("How to deposit a cheque issued to an associate in my busines
 他にも適合アイテムのランキングを考慮した指標などもありますが、具体的な解説は他の記事に譲ります。
 
 ### Generation
-応答がコンテキストの内容を使用しているかを評価します。
+応答がコンテキストの内容を使用しているかを評価します。RAG全体像の図でいうresponseテキストの精度ですね。
 
 - Relevancy: コンテキストを考慮し、検索結果がクエリとどの程度一致するか
 - Faithfulness: 検索結果がコンテキストとどの程度一致するか
@@ -179,8 +182,10 @@ query_engine.query("How to deposit a cheque issued to an associate in my busines
 
 そしてこの「定量的」な判断にもLLMを活用しているのが面白いです。つまりコンテキストも数値ではなくテキストの配列であり、検索結果と比較して0-1などの数値で評価するのを人力でやるのはスケールしないため、LLM審判に評価を任せます。
 
-### 実行コード
-今回はRAG評価のためのライブラリRagas[^3]を使用して実現しました。
+Indexステップで軽く触れた精度改善の施策などそれぞれの打ち手を、ここで計測した指標を元に定量評価→分析することでより堅牢なパイプラインに仕上げることができます！（願望）
+
+### コード
+今回はRAG評価のためのライブラリRagas[^3]で実装しました。
 ```Python
 from ragas.langchain import RagasEvaluatorChain
 from ragas.metrics import (
@@ -206,7 +211,7 @@ eval_chains = {
           faithfulness,
           answer_relevancy,
           context_precision,
-          # context_recall,
+          context_recall,
         ]
 }
 
@@ -224,14 +229,112 @@ for question in fiqa_eval["baseline"]["question"]:
 # faithfulness         0.822222
 # answer_relevancy     0.872568
 # context_precision    0.816667
+# context_recall       0.812532
 df_eval.mean()
 ```
 
+## おまけ
+### 検証用のデータセット作成
+LLMアプリケーションを動かすモデルの根底には確率的な性質が伴うため、よりロバストなモデルを作成するためにはプロダクションの分布にマッチしたテストデータで検証することが重要です。
+
+RAGパイプラインの検証に必要な項目はこちら。
+| カラム | 説明 |
+| ---- | ---- |
+| question | 質問 |
+| contexts | 回答を生成するために必要なデータ（relevant data） |
+| ground_truths | 正解の回答 |
+| answer | RAGが生成した回答 |
+
+今回は自前でテストデータを作成したのですが、既存のOSSで自動生成する便利ツールもあるにはあります。
+https://api.python.langchain.com/en/latest/evaluation/langchain.evaluation.qa.generate_chain.QAGenerateChain.html
+https://docs.ragas.io/en/latest/concepts/testset_generation.html
+
+ただ言語の問題などで得られた結果をそのまま使える状況にはならなかったので、プロンプトは参考にさせてもらいながらスクラッチで実装しました。
+
+RagasのTestsetGeneratorではground_truthsとcontextsを別のプロンプトで作成していたのですが、まとめて出力させた方が関係の薄いコンテキストを拾ってくる割合は減りました。
+
+```Python
+from langchain.llms import OpenAI, OpenAIChat
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+import pandas as pd
+
+class TestDataset(BaseModel):
+    question: str = Field(description="question")
+    ground_truths: list[str] = Field(description="ground truths")
+    relevant_sentences: list[str] = Field(description="relevant sentences")
+
+parser = PydanticOutputParser(pydantic_object=TestDataset)
+
+llm = OpenAI(temperature=0, api_key=OPENAI_API_KEY, model="text-davinci-003")
+prompt = PromptTemplate(
+    template="""You are a teacher coming up with questions to ask on a quiz.
+Given the following document, please generate a question and answer based on that document in Japanese.
+
+In addition, please extract relevant sentences from the provided document that can potentially help your answer.
+While extracting candidate sentences you're not allowed to make any changes to sentences from given context.
+
+Document Format:
+<Begin Document>
+{doc}
+<End Document>
+
+Be sure to follow the output instructions and ensure correct JSON format.
+Be aware that your results often end up outputting in the middle of a statement.
+{format_instructions}
+
+These questions should be detailed and be based explicitly on information in the document. Begin!""",
+    input_variables=["doc"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
+)
+llm_chain = LLMChain(prompt=prompt, llm=llm)
+
+# テストデータを保存するDataFrame
+df_baseline = pd.DataFrame()
+for i, node in enumerate(nodes):
+  try:
+    context = node.get_content()
+    res = llm_chain.predict(doc=context)
+    test_dataset = parser.parse(res)
+
+    row_baseline = {
+        "question": test_dataset.question,
+        "contexts": test_dataset.relevant_sentences,
+        "ground_truths": test_dataset.ground_truths,
+    }
+    df_baseline = pd.concat([df_baseline, pd.DataFrame([pd.Series(row_baseline)])])
+    print(f"Success generate dataset! {i}")
+  except Exception:
+    # 結果のパースに失敗するなど、エラーがあったら無視する
+    pass
+```
+
+### ドキュメントの更新に対応
+本番運用時にはドキュメントの更新に応じてインデックスも再作成が必要になります。ここでは簡単にNotionで作成したページの変更を検知する方法をいくつか紹介します。
+
+- ZapierでNotionデータベースレコードの変更・追加を検知
+  - Notionデータベースで管理されているドキュメントであれば有効な方法
+  - 削除を検知できない
+- Notionデータベースにインデックス作成ステータスを管理するカラムを追加
+  - ステータスは作成前、作成済み、不要など
+  - 運用の中でドキュメントを更新したらステータスを作成前にする
+  - 定期バッチ処理でステータスを見に行って処理したら作成済みステータスにする
+  - [Database automations](https://www.notion.so/help/database-automations)がSlack以外の外部サービスに通知を送れるようになればバッチの仕組みも必要なくなる🤔
+
+上記の方法で変更されたページのIDを取得できたら、Notion APIを使って本文を取得してインデックスを再作成→外部ストレージに保存すれば対応できます。
+
 # まとめ
-プロジェクトの中で決まったことをドキュメント化しておくことは今後より重要になるでしょう。
+世の中のAI活用が進むことでドキュメンテーションの重要性は今後より一層増えるでしょう。
+
+RAGを含めたLLMアプリケーションには確率的な性質を伴うため、100%期待する結果が得ることは難しいです。そのためまずはバージョン1を爆速で開発し、そこで得られたフィードバックを元に改善ループを回す仕組みが提供価値を最大化につながります。
+
+今回はLlamaIndexを使ったシンプルな実装で終わったしまいましたが、運用の中で見つけた改善点やTipsはまた別記事で公開しようと思います。
 
 それではまたお会いしましょう！
 
 [^1]: https://docs.llamaindex.ai/en/latest/getting_started/concepts.html
 [^2]: https://blog.llamaindex.ai/evaluating-multi-modal-retrieval-augmented-generation-db3ca824d428
 [^3]: https://docs.ragas.io/en/latest/index.html
+[^4]: https://docs.llamaindex.ai/en/stable/optimizing/production_rag.html
