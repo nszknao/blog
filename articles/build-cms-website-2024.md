@@ -3,7 +3,7 @@ title: "2024年にCMS付きのWebサイトをスクラッチで作る"
 emoji: "🗂️"
 type: "tech" # tech: 技術記事 / idea: アイデア記事
 topics: ["nextjs", "cms", "sanity"]
-published: false
+published: true
 ---
 
 # tl;dr
