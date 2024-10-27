@@ -68,7 +68,7 @@ CMD ["python3", "-m", "jupyter", "lab", "--allow-root", "--ip=0.0.0.0", "--port=
 
 # Terraformでリソースを作成
 AWSのインフラ構成は以下の通りです。
-![AWSアーキテクチャ](/images/1a314f08-d91f-41fa-bb8f-7cb151cbcb33.png)
+![AWSアーキテクチャ](/images/ecs-gpu-ec2-jupyter/1a314f08-d91f-41fa-bb8f-7cb151cbcb33.png)
 
 それぞれのリソースについて、Terraformファイルとハマりどころを記載していきます。デプロイするために必要な周辺リソースはトグル内に入れておきました。
 
@@ -412,22 +412,22 @@ resource "aws_lb_listener" "http" {
 この辺りの手順はマニュアルですが、複数回実行することは無いので許容してます。
 
 最初に定義したDockerfileをビルドして、上記で作成したECRにpushします。AWSコンソールからECRリポジトリを開くと右上に「プッシュコマンドを表示」ボタンがあるので、記載された手順に沿って操作すれば問題ないです。
-![ECRのプッシュコマンド](/images/f59ff483-d672-4e11-965c-34285cf94ba9.png)
+![ECRのプッシュコマンド](/images/ecs-gpu-ec2-jupyter/f59ff483-d672-4e11-965c-34285cf94ba9.png)
 *ECRにDockerイメージをプッシュ*
 
 
 ECSクラスターのコンソールからタスクを実行します。起動タイプに「EC2」を選択して、先ほど作成したタスク定義を指定してあげればOKです。
-![ECSタスクの実行](/images/813dd0bb-0a11-4a94-b424-abccd998d7d3.png)
+![ECSタスクの実行](/images/ecs-gpu-ec2-jupyter/813dd0bb-0a11-4a94-b424-abccd998d7d3.png)
 *ECSタスクの実行*
 
 最後に、EC2のターゲットグループにインスタンスを登録します。ここで指定するポートは、タスク定義の`hostPort`と同じにしてください。
 
 もし`hostPort`に0を指定した場合は動的にポートが割り当てられているので、EC2インスタンスにsshで入り`docker ps`で確認できます。
-![ターゲットグループに登録](/images/47006dda-326c-42c5-93b9-055602186fcb.png)
+![ターゲットグループに登録](/images/ecs-gpu-ec2-jupyter/47006dda-326c-42c5-93b9-055602186fcb.png)
 *ターゲットグループにインスタンスを登録*
 
 以上でECSタスクが起動したので、ALBのDNS名にアクセスすればJupyterLabが起動しているはずです。
-![Jupyterの起動確認](/images/9e8b5ae1-8e43-41a5-975b-01294362bdb3.png)
+![Jupyterの起動確認](/images/ecs-gpu-ec2-jupyter/9e8b5ae1-8e43-41a5-975b-01294362bdb3.png)
 *Jupyter起動！*
 
 # まとめ

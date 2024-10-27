@@ -31,7 +31,7 @@ https://twitter.com/keccak255/status/1588378297658118144
 - GitHubへのコミットのイベントを検知して、草画像のカラーテーマがランダムで更新される
 
 簡単な概念モデルを作成しました。
-![概念モデル](/images/459d3937-fd8c-41da-b953-d8bf71124923.png)
+![概念モデル](/images/dynamic-nft-chainlink/459d3937-fd8c-41da-b953-d8bf71124923.png)
 
 ## スタック
 - OpenZeppelin, Foundry, Hardhat
@@ -59,7 +59,7 @@ https://ja.wikipedia.org/wiki/%E9%80%A3%E9%95%B7%E5%9C%A7%E7%B8%AE
 https://github.com/williambelle/github-contribution-color-graph/blob/master/src/js/contentscript.js#L3-L37
 
 草画像の完成イメージはこんな感じです。
-![GitHub草画像](/images/0db985da-3755-4965-8bdc-eb85003f0383.png)
+![GitHub草画像](/images/dynamic-nft-chainlink/0db985da-3755-4965-8bdc-eb85003f0383.png)
 
 ただコミットのイベント検知を再現する部分はGitHubとの連携が必要になり、この記事のトピックからずれてくるため、疑似的にイベントを検知できるようコントラクト上で発火させたい関数をpublicにしています。
 
