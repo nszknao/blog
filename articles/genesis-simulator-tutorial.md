@@ -149,6 +149,78 @@ python render_on_macos.py --vis
 
 # 基本的な使い方
 
+## 初期化
+
+最初のステップで、genesis をインポートして初期化する必要があります。
+
+```python
+import genesis as gs
+gs.init(backend=gs.cpu, precision="32")
+```
+
+- **バックエンドデバイス**: クロスプラットフォームに対応していて、ここでは`gs.cpu`を指定していますが、`gs.cuda`などの他のバックエンドに切り替えることができます。
+- **精度**: デフォルトでは f32 精度ですが、より高い精度が必要な場合は`"64"`を指定することで f64 精度に切り替えることができます。
+
+## シーンの作成
+
+すべてのオブジェクト、ロボット、カメラなどはシーンに配置されます。
+
+```python
+scene = gs.Scene(
+    sim_options=gs.options.SimOptions(
+        dt=0.01,
+        gravity=(0, 0, -10.0),
+    ),
+    show_viewer=True,
+    viewer_options=gs.options.ViewerOptions(
+        camera_pos=(3.5, 0.0, 2.5),
+        camera_lookat=(0.0, 0.0, 0.5),
+        camera_fov=40,
+    ),
+)
+```
+
+この例では、シミュレーション dt を各ステップで 0.01s に設定し、重力を設定し、ビューワの初期カメラポーズを設定します。
+
+## オブジェクトの追加
+
+Genesis では、すべてのオブジェクトとロボットは Entity として表されます。 オブジェクト指向で設計されているため、ハンドルや割り当てられたグローバル ID を使用する代わりに、メソッドを通じて直接これらの Entity を操作することができます。
+
+```python
+plane = scene.add_entity(gs.morphs.Plane())
+franka = scene.add_entity(
+    gs.morphs.MJCF(file='xml/franka_emika_panda/panda.xml'),
+)
+```
+
+`add_entity`の第一引数は Morph 型で、以下のようなプリミティブタイプを持ちます。
+
+- `gs.morphs.Box`: ボックス
+- `gs.morphs.Sphere`: 球
+- `gs.morphs.Cylinder`: シリンダー
+- `gs.morphs.Plane`: 平面
+
+![](/images/genesis-simulator-tutorial/b1b1cebc-bf64-4118-8ebf-d659451eb0b2.webp)
+
+また、他のツールで作成した 3D モデルを読み込むこともできます。現在サポートされているフォーマットはこちらです。
+
+- `gs.morphs.MJCF`: MuJoCo XML ファイル
+- `gs.morphs.URDF`: URDF(Unified Robotics Description Format) ファイル
+- `gs.morphs.Mesh`: メッシュアセット（\*.obj, \*.ply, \*.stl, \*.glb, \*.gltf）
+
+## シミュレーションの実行
+
+これまでに追加したアセットをビルドし、シミュレーションを実行します。
+
+```python
+scene.build()
+for i in range(1000):
+    scene.step()
+```
+
+まず`scene.build()`を呼び出してシーンをビルドする必要があることに注意が必要です。
+これは、genesis が実行ごとに GPU カーネルをその場でコンパイルする JIT コンパイラを採用していて、プロセスを開始する明示的なステップが必要なためです。
+
 # 注意点とトラブルシューティング
 
 # まとめ
