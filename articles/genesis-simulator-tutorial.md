@@ -1,16 +1,16 @@
 ---
-title: "生成AIをネイティブサポートする物理シミュレータ「Genesis」"
+title: "生成AIをネイティブでサポートする（予定の）物理シミュレータ: Genesis"
 emoji: "⚛️"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["Python", "Genesis"]
-published: false
+published: true
 ---
 
 # はじめに
 
 先日発表された物理 AI エンジン「Genesis」が話題になっていたので、その導入方法や基本的な使い方を解説します。
 
-https://x.com/_philschmid/status/1869639246434246966
+https://x.com/zhou_xian_/status/1869511650782658846
 
 # Genesis とは
 
@@ -35,7 +35,7 @@ https://genesis-embodied-ai.github.io/
 - Apple M1 (macOS Sequoia 15.2)
 - Python 3.11
 - Miniconda がインストール済み
-  - uv の Python 経由だと OpenGL のエラーでビューワが起動しない不具合があります [Issue#11](https://github.com/Genesis-Embodied-AI/Genesis/issues/11)
+  - uv の Python 経由だと OpenGL のエラーでビューワが起動しない不具合がありました [Issue#11](https://github.com/Genesis-Embodied-AI/Genesis/issues/11)
 
 ## インストール
 
@@ -221,8 +221,115 @@ for i in range(1000):
 まず`scene.build()`を呼び出してシーンをビルドする必要があることに注意が必要です。
 これは、genesis が実行ごとに GPU カーネルをその場でコンパイルする JIT コンパイラを採用していて、プロセスを開始する明示的なステップが必要なためです。
 
-# 注意点とトラブルシューティング
+# その他の機能
+
+## パラレルシミュレーション
+
+GPU を使ってシミュレーションを高速化する最大の利点は、シーンレベルの並列処理によって何千もの環境で同時にロボットを訓練できるようになることです。
+
+![](/images/genesis-simulator-tutorial/e09f28ae-b040-48f9-a2e5-3711a3e292a3.webp)
+
+シーンを構築するときに、`n_envs` というパラメータを渡すだけで、シミュレータに必要な環境の数を設定できます。
+
+```python
+import torch
+
+B = 20
+scene.build(n_envs=B, env_spacing=(1.0, 1.0))
+
+# コントローラを通して入力する際にもバッチ数を指定する
+franka.control_dofs_position(torch.zeros(B, 9, device=gs.device))
+```
+
+コントローラーの入力にもバッチ数を指定する必要があることに注意してください。
+
+ですが指定を忘れても genesis 側で自動的に次元を追加してくれて、警告とともに実行自体はできるのはポイント高いです。
+
+```
+[Genesis] [17:51:31] [WARNING] Input tensor is converted to torch.Size([20, 9]) for an additional batch dimension
+```
+
+## 逆運動学とモーションプランニング
+
+逆運動学ではロボットの先端（エンドエフェクタ）を目標位置に移動させるための関節の角度や動きを計算し、モーションプランニングで障害物や環境を考慮しながら、ロボットが目標地点に到達するための経路を計画します。
+
+![](/images/genesis-simulator-tutorial/3fd56437-dcdc-4579-a5f7-7a03f252fd24.webp)
+
+モーションプランニングを実行するには、事前に OMPL（Open Motion Planning Library）モジュールを[インストール](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/installation.html#optional-motion-planning)する必要があるので注意してください。
+
+```python
+# エンドエフェクタのリンクを取得
+end_effector = franka.get_link('hand')
+
+# 把持する手前の位置と姿勢を逆運動学で計算
+qpos = franka.inverse_kinematics(
+    link = end_effector,
+    pos  = np.array([0.65, 0.0, 0.25]),
+    quat = np.array([0, 1, 0, 0]),
+)
+# グリッパーを開く位置
+qpos[-2:] = 0.04
+path = franka.plan_path(
+    qpos_goal     = qpos,
+    num_waypoints = 200, # 2s duration
+)
+# 計画された経路を実行
+for waypoint in path:
+    franka.control_dofs_position(waypoint)
+    scene.step()
+
+# コントローラによる制御では目標位置と現在位置の間にずれが生じるため、
+# 最終的な位置に到達するための微調整
+for i in range(100):
+    scene.step()
+```
+
+## 剛体以外のシミュレーション
+
+genesis ではこれまでに行った剛体ミュレーションの他に、流体力学などの物理ソルバーもサポートしています。
+
+![](/images/genesis-simulator-tutorial/1177fab1-8796-4e46-8a44-918d2c171c32.webp)
+*Image: Genesis HP*
+
+# 今後の開発ロードマップ
+
+公式ドキュメントには[ロードマップ](https://genesis-world.readthedocs.io/en/latest/roadmap/index.html)の記載もあります。
+
+中でも「包括的な生成フレームワーク」は、ユーザーが自然言語で記述したプロンプトを、モーションなどさまざまなモダリティのデータに変換する機能とのことで非常に楽しみです。
+
+### 進行中で近日中にリリース予定の機能
+
+- 微分可能で物理ベースの触覚センサーモジュール
+- 微分可能な剛体シミュレーション
+- タイルレンダリング
+- 高速な JIT カーネルコンパイル
+- 包括的な生成フレームワーク
+  - キャラクターの動作
+  - カメラモーション
+  - インタラクティブなシーン
+  - 顔のアニメーション
+  - 移動ポリシー
+  - 操作ポリシー
+- 大規模な環境に対応する無制限 MPM（Material Point Method）シミュレーション
+
+### 希望されているが現在取り組んでいない機能
+
+- Windows でのビューアおよびヘッドレスレンダリング
+- インタラクティブな GUI システム
+- さらなる MPM ベースの材料モデルのサポート
+- より多くのセンサータイプの対応
 
 # まとめ
 
+生成 AI を活用したソフトウェア開発が盛り上がる中、AI を知能とするロボティクスへの応用が急速に広がっています。
+
+従来の物理シミュレータはデザインやドキュメントの使い勝手に難があり、自分含め新参者には学習コストが高い印象がありました。しかし Genesis は掲げている長期ミッションにもある通り、そのハードルを下げ、非専門家や個人でも物理シミュレーションにアクセスしやすいプラットフォームを提供しています。
+
+自分でも触り続けながらこのプロジェクトの可能性をさらに探求し、応用事例を深掘りしていきたいと考えています。
+
 それではまたお会いしましょう！
+
+# 余談
+
+- 記事内で使用した動画を撮影するために使ったカメラのポジションコントロール難しすぎ？
+- アドカレに参加しようと思ったけど、駆け込みでいい感じのカテゴリ枠がなくて野良で投稿
