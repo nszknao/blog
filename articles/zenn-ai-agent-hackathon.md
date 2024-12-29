@@ -6,6 +6,10 @@ topics: ["ai", "LLM"]
 published: false
 ---
 
+:::message
+本記事は[AI Agent Hackathon with Google Cloud](https://zenn.dev/hackathons/2024-google-cloud-japan-ai-hackathon)に提出したプロジェクトの記事です。
+:::
+
 # プロジェクト概要
 
 ## タイトルと概要
