@@ -113,7 +113,23 @@ sudo apt install flac
 
 ### 映像認識
 
-TODO: 映像認識のライブラリやモデルについて記載
+Picamera2 をインストール
+
+```bash
+sudo apt install -y python3-picamera2
+```
+インストール時にいくつか注意点があります
+- virtualenv でシステムワイドなモジュールをインストールする場合は、`--system-site-packages` オプションを付ける
+
+```bash
+uv venv --system-site-packages
+```
+
+- numpy は 1 系を使わないとエラーが出ました
+
+```
+ValueError: numpy.dtype size changed, may indicate binary incompatibility. Expected 96 from C header, got 88 from PyObject
+```
 
 ## 出力層
 
