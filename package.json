@@ -11,5 +11,5 @@
   "dependencies": {
     "zenn-cli": "0.1.158"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.5"
 }
