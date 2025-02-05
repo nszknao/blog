@@ -12,13 +12,17 @@ published: false
 
 # プロジェクト概要
 
-子供の疑問に答える AI エージェント「（仮）話し相手エージェント」を開発しました。
+子供の疑問に答える AI エージェント「wondy」を開発しました。
 
 ## 課題と対象ユーザー
 
+FIXME: 現在の親の対応方法をわかりやすく説明してください
+
 私たちのプロジェクトが対象とするユーザーは、好奇心旺盛な子供とその親です。特に、子供が日常生活の中で「これなに？」と感じた疑問を、すぐに解消できる環境を求める家庭に焦点を当てています。
 
-現在、これらの課題が存在すると考えています。
+さまざまなことに興味を持つ子供の好奇心の芽を摘まないために、親は xx な方法で対応しています。
+
+これらの対応策には以下のような課題が存在すると考えています。
 
 - 子供の疑問に対して、親が時間的に余裕がなく答えられない場合や、知識が足りずに答えられない場合がある
 - 興味を持った瞬間を逃すと、子供の関心が他のことに移りやすく、深い学びにつながらない
@@ -26,7 +30,19 @@ published: false
 
 # ソリューションと技術
 
-これらの課題に対するソリューションとして、私たちは以下の特徴を持つ AI エージェントを開発しました。
+これらの課題に対するソリューションとして開発した「wondy」は、大きく 2 つのコンポーネントから構成されています。
+
+### wondy エージェント
+
+主に子供が利用するインターフェースで、音声や映像を通じて子供の疑問に回答します。
+
+### wondy ダッシュボード
+
+親が利用するインターフェースで、子供の質問履歴や回答内容を確認できます。
+
+## ソリューションが提供する価値
+
+wondy は以下のような価値をユーザーに提供します。
 
 ### 子供の疑問に応える直感的なインターフェース
 
@@ -38,102 +54,39 @@ published: false
 - 疑問に対してリアルタイムに回答を生成し、関連する追加情報も提供
 - 子供がさらに深堀りした質問をした際も柔軟に対応
 
-このプロジェクトにより、子供の好奇心を育むと同時に、親の負担を軽減します。
+### 子供が日頃から興味を持っていることの理解
+
+- 親は質問履歴をダッシュボードで確認し、子供の興味関心を理解できます
+- 子供の成長に合わせて、エージェントの回答内容をカスタマイズ
 
 ![](/images/zenn-ai-agent-hackathon/fc5f31c2-dec5-46bf-b910-6857bd7b904b.webp)
-_利用イメージ_
+_wondy エージェントの利用イメージ_
+
+これらのソリューションにより、子供の好奇心を育むと同時に、親子のコミュニケーションを促進し、子供の成長をサポートします。
 
 ## 技術スタック
 
-TODO: 技術スタックについて記載
+FIXME: 他に良い書き方があれば提案してください
+
+### wondy エージェント
+
+- 本体: Raspberry Pi （カメラ・マイク・スピーカーを搭載）
+- 言語: Python
+- API: Gemini Multimodal Live API
+
+### wondy ダッシュボード
+
+- 言語: Node.js
+- フレームワーク: Next.js
 
 ## システムアーキテクチャ
 
 TODO: アーキテクチャ図を添付
-
-- 入力層:
-  - マイク: 子供の質問を音声として取得
-  - カメラ: 周囲の映像を取得
-- 処理層:
-  - 音声認識: 質問内容をテキストに変換
-  - 映像認識: カメラ映像から Google Cloud や Gemini API を使って対象物を特定
-- 出力層:
-  - スピーカー: 音声で回答を伝える
+FIXME: わかりやすい解説方法があれば提案してください
 
 # 実装とデザイン
 
-## 入力層
-
-実際に使用したハードウェはこちら。
-
-- Raspberry Pi 3 Model B
-- マイク
-- カメラ
-- スピーカー
-
-## 処理層
-
-### 音声認識
-
-SpeachRecognition をインストール
-
-```bash
-uv add SpeechRecognition
-```
-
-SpeachRecognition でマイクを使う場合は PyAudio もインストールが必要
-
-```bash
-sudo apt-get install portaudio19-dev
-
-uv add PyAudio
-```
-
-pyttsx3 をインストール
-
-```bash
-sudo apt install espeak-ng libespeak1
-
-uv add pyttsx3
-```
-
-オフラインで動くのが良いです
-
-:::details flac インストール
-
-```bash
-OSError: FLAC conversion utility not available - consider installing the FLAC command line application by running `apt-get install flac` or your operating system's equivalent
-```
-
-```bash
-sudo apt install flac
-```
-
-:::
-
-### 映像認識
-
-Picamera2 をインストール
-
-```bash
-sudo apt install -y python3-picamera2
-```
-インストール時にいくつか注意点があります
-- virtualenv でシステムワイドなモジュールをインストールする場合は、`--system-site-packages` オプションを付ける
-
-```bash
-uv venv --system-site-packages
-```
-
-- numpy は 1 系を使わないとエラーが出ました
-
-```
-ValueError: numpy.dtype size changed, may indicate binary incompatibility. Expected 96 from C header, got 88 from PyObject
-```
-
-## 出力層
-
-TODO: スピーカーから音声を出力する方法について記載
+FIXME: 読者がわかりやすい書き方があれば提案してください
 
 # デモンストレーション
 
