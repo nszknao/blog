@@ -9,7 +9,7 @@
     "new": "zenn new:article"
   },
   "dependencies": {
-    "zenn-cli": "0.1.158"
+    "zenn-cli": "0.1.162"
   },
   "packageManager": "pnpm@9.15.5"
 }
