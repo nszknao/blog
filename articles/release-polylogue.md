@@ -35,7 +35,9 @@ Claudeと設計の壁打ちをしていると、1つのモデルだけでは視�
 
 最近はClaudeの[Agent Teams](https://code.claude.com/docs/en/agent-teams)で複数の視点を持って推論できるようになりましたが、Claude以外のモデルも組み込みたいですし、テーマに応じた議論の構造化やペルソナ設計を毎回手作業でやるのも面倒です。
 
-なので、テーマを入れるだけで構造化された議論が走るCLIを実験的に作ってみました。
+なので、テーマを入れるだけで構造化された議論が走るCLIを実験的に作ってみました。コードはOSSとして公開しています。
+
+https://github.com/nszknao/polylogue
 
 ```mermaid
 graph LR
